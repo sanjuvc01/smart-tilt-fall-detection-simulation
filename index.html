@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STM32 Tilt–Fall Prototype Simulator</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="brand">◈ <b>ProtoBench</b></div><nav>Simulator　 Projects　 Docs</nav><div class="project-name">STM32 Tilt–Fall Detection Prototype <span id="saveStatus">● Local prototype</span></div></header>
+<div class="toolbar">
+<button class="primary" id="runBtn">▶ Run</button><button id="stopBtn">■ Stop</button><button id="resetBtn">↻ Reset</button>
+<span id="runState">Stopped</span><span class="spacer"></span><button id="exportBtn">Export report</button>
+</div>
+<main class="layout">
+<aside class="palette">
+<h3>Components</h3><input id="search" placeholder="Search components…">
+<div class="part" draggable="true" data-part="STM32 Blue Pill">▦　STM32 Blue Pill</div>
+<div class="part" draggable="true" data-part="MPU-6050">▧　MPU-6050 (I²C)</div>
+<div class="part" draggable="true" data-part="ESP8266 ESP-01">▤　ESP8266 ESP-01</div>
+<div class="part" draggable="true" data-part="Buzzer">◉　Buzzer</div>
+<div class="part" draggable="true" data-part="LED">●　LED indicator</div>
+<div class="part" draggable="true" data-part="3.3V Regulator">⚡　3.3V regulator</div>
+<p class="hint">Drag a part onto the workspace. This is a visual prototype; it does not emulate STM32 machine code or actual Wi‑Fi.</p>
+</aside>
+<section class="center">
+<div class="tabs"><button class="tab active" data-tab="schematic">Circuit</button><button class="tab" data-tab="logic">Signal flow</button><button class="tab" data-tab="notes">Build notes</button><span class="spacer"></span><span class="small">Workspace · click a component to inspect</span></div>
+<div id="schematic" class="canvas" tabindex="0">
+<div class="rail top-rail">3.3V POWER RAIL</div>
+<svg id="wires" viewBox="0 0 900 610" preserveAspectRatio="none" aria-label="Connection wires">
+<path class="wire red" d="M160 145 H230 V110 H320"/><path class="wire black" d="M160 185 H215 V285 H320"/>
+<path class="wire green" d="M420 155 H490 V235 H550"/><path class="wire yellow" d="M420 175 H510 V275 H550"/>
+<path class="wire blue" d="M430 355 H500 V350 H550"/><path class="wire yellow" d="M430 385 H480 V460 H680"/>
+<path class="wire red" d="M620 180 V110 H710"/><path class="wire black" d="M620 410 V500 H710"/>
+</svg>
+<div class="node mpu" data-node="MPU-6050"><b>MPU-6050</b><small>Accelerometer + Gyro</small><span>VCC · GND · SCL · SDA</span></div>
+<div class="node stm" data-node="STM32 Blue Pill"><b>STM32 Blue Pill</b><small>STM32F103C8T6</small><span>I²C1 · UART1 · GPIO</span></div>
+<div class="node esp" data-node="ESP8266 ESP-01"><b>ESP8266 ESP-01</b><small>Wi‑Fi UART module</small><span>3.3V · GND · TX/RX</span></div>
+<div class="node buzzer" data-node="Buzzer"><b>◉ Buzzer</b><small>via transistor driver</small></div>
+<div class="node power" data-node="3.3V Regulator"><b>3.3V regulator</b><small>Stable supply</small></div>
+<div class="wire-label l1">I²C</div><div class="wire-label l2">UART</div><div class="wire-label l3">GPIO</div>
+<div class="canvas-footer">Conceptual wiring map — verify exact pinout and power requirements before hardware connection.</div>
+</div>
+<div id="logic" class="canvas hidden">
+<div class="flow">
+<div class="flowbox">Read MPU-6050<br><small>Accel + gyro over I²C</small></div><div class="arrow">↓</div>
+<div class="flowbox">Filter / calculate tilt angle</div><div class="arrow">↓</div>
+<div class="flowbox decision">Angle exceeds threshold<br>or sudden acceleration?</div>
+<div class="branches"><div><b>NO</b><div class="arrow">↓</div><div class="flowbox">Continue monitoring</div></div><div><b>YES</b><div class="arrow">↓</div><div class="flowbox alert">Trigger buzzer + create alert</div><div class="arrow">↓</div><div class="flowbox">Send event via ESP8266 UART</div></div></div>
+</div></div>
+<div id="notes" class="canvas hidden notes"><h2>Prototype assumptions & limitations</h2><ul><li>This page simulates the detection logic with adjustable sensor values, not the STM32 CPU.</li><li>MPU-6050 is represented by controllable tilt/acceleration values; it is not a device-level I²C model.</li><li>ESP8266 connectivity and cloud upload are status demonstrations only; no Wi‑Fi connection or cloud request is made.</li><li>Use a proper regulated 3.3 V supply. ESP-01 can draw current peaks that a weak regulator cannot supply.</li><li>Check the actual Blue Pill clone pin labels and the MPU-6050 breakout voltage tolerance before wiring.</li></ul></div>
+</section>
+<aside class="right">
+<section class="panel"><h3>Live simulation</h3><div class="status"><span id="statusDot">●</span> <span id="statusText">Stopped</span></div>
+<label for="tilt">Tilt angle <b id="tiltVal">12°</b></label><input id="tilt" type="range" min="0" max="90" value="12">
+<label for="accel">Acceleration magnitude <b id="accelVal">1.0 g</b></label><input id="accel" type="range" min="0" max="40" value="10">
+<label for="threshold">Tilt threshold <b id="thresholdVal">35°</b></label><input id="threshold" type="range" min="15" max="75" value="35">
+<div class="metrics"><div><small>Detection</small><strong id="detection">NORMAL</strong></div><div><small>Buzzer</small><strong id="buzzerState">OFF</strong></div><div><small>Wi‑Fi</small><strong id="wifiState">SIMULATED</strong></div></div>
+<button class="wide" id="fallBtn">⚠ Inject fall event</button><button class="wide secondary" id="clearBtn">Clear serial log</button></section>
+<section class="panel"><h3>Serial monitor</h3><div id="serial" class="serial"><p>[BOOT] Prototype loaded. Press Run to begin.</p></div></section>
+<section class="panel"><h3>Event history</h3><div id="events" class="events">No events yet.</div></section>
+</aside>
+</main>
+<footer>Educational concept simulator · simulated values only · no real firmware or network traffic</footer>
+<script src="script.js"></script>
+</body></html>
